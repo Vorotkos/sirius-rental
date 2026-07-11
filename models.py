@@ -13,6 +13,7 @@ class Room(Base):
     capacity = Column(Integer)
     equipment = Column(String)
 
+
     #связь с бронированиями
     bookings = relationship("Booking", back_populates="room")
 
@@ -30,3 +31,4 @@ class Booking(Base):
 
     #связь с комнатой
     room = relationship("Room", back_populates="bookings")
+

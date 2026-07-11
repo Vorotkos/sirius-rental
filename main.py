@@ -7,9 +7,21 @@ from pydantic import BaseModel, Field
 from database import engine, get_db, Base
 from models import Room, Booking
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+import os
+
 import webbrowser
 import threading
 import time
+
+import logging
+from logging.handlers import RotatingFileHandler
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import time
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -18,6 +30,37 @@ app = FastAPI(
     description="Сервис бронирования пространств",
     version="1.0.0"
 )
+# ______________________
+# ЛОГИРОВАНИЕ
+# ______________________
+logger = logging.getLogger("api_logger")
+logger.setLevel(logging.INFO)
+
+# RotatingFileHandler — новый файл при достижении 5МБ
+# backupCount – количество сохраняемых старых файлов
+file_handler = RotatingFileHandler(
+    "api_requests.log",
+    maxBytes=5 * 1024 * 1024,  # 5 МБ
+    backupCount=3,
+    encoding="utf-8"
+)
+formatter = logging.Formatter("[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+# middleware — собирает все запросы и логирует их
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = (time.time() - start_time) * 1000  # время в миллисекундах
+
+    #метод, URL, статус ответа, время выполнения
+    logger.info(
+        f"{request.method} {request.url.path} → {response.status_code} ({process_time:.0f}ms)"
+    )
+
+    return response
 
 #схемы для комнат
 class RoomCreate(BaseModel):
@@ -267,7 +310,29 @@ def get_available_rooms(
 def open_browser():
     """Открывает браузер через 1.5 секунды после запуска сервера"""
     time.sleep(1.5)
-    webbrowser.open("http://127.0.0.1:8000/docs")
+    webbrowser.open("http://127.0.0.1:8000")
+
+# ДЛЯ ИНТЕРФЕЙСА
+
+#для запросов из других источников
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+#для папки
+os.makedirs("static", exist_ok=True)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+#главная страница
+@app.get("/")
+def read_root():
+    return FileResponse("static/index.html")
+# ______________________________
 
 if __name__ == "__main__":
     import uvicorn
