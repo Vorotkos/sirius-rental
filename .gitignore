@@ -1,5 +1,10 @@
 venv/
-*.db
 __pycache__/
 *.pyc
-.env
+data/
+rooms.db
+api_requests.log
+build/
+dist/
+.idea/
+data/test_rooms.db

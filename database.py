@@ -1,8 +1,13 @@
+import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import sessionmaker
 
-#подключение к базе данных SQLite
-SQLALCHEMY_DATABASE_URL = "sqlite:///./rooms.db"
+from sqlalchemy.orm import declarative_base
+Base = declarative_base()
+
+os.makedirs("data", exist_ok=True)
+
+SQLALCHEMY_DATABASE_URL = "sqlite:///./data/rooms.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -10,10 +15,6 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-#класс для моделей
-class Base(DeclarativeBase):
-    pass
 
 def get_db():
     db = SessionLocal()

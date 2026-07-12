@@ -11,21 +11,54 @@
         .badge-capacity { font-size: 0.9em; }
         .booking-item { border-left: 3px solid #0d6efd; padding-left: 10px; margin-bottom: 8px; }
         .booking-cancelled { border-left-color: #6c757d; opacity: 0.6; }
+
+        /* Стили для toast-уведомлений */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast-notification {
+            min-width: 300px;
+            max-width: 450px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95em;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            word-wrap: break-word;
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast-success { background-color: #198754; }
+        .toast-danger  { background-color: #dc3545; }
+        .toast-warning { background-color: #ffc107; color: #212529; }
     </style>
 </head>
 <body>
+    <!-- Контейнер для уведомлений -->
+    <div id="toast-container"></div>
+
     <div class="container mt-4">
-        <h1 class="text-center mb-4"> 🏢Сириус.Аренда🏢</h1>
+        <h1 class="text-center mb-4">🏢 Сириус.Аренда 🏢</h1>
         <p class="text-center text-muted">Сервис бронирования пространств</p>
 
-        <div id="message" class="mb-3"></div>
-
         <div class="row">
+            <!-- Левая колонка: Список комнат -->
             <div class="col-md-7">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">📋 Доступные пространства</h5>
-                        <button class="btn btn-sm btn-primary" onclick="loadRooms()"> Обновить</button>
+                        <button class="btn btn-sm btn-primary" onclick="loadRooms()">🔄 Обновить</button>
                     </div>
                     <div class="card-body">
                         <div id="rooms-list">
@@ -35,10 +68,12 @@
                 </div>
             </div>
 
+            <!-- Правая колонка: Формы -->
             <div class="col-md-5">
+                <!-- Форма создания комнаты -->
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">➕ Добавить пространство</h5>
+                        <h5 class="mb-0"> Добавить пространство</h5>
                     </div>
                     <div class="card-body">
                         <form id="room-form">
@@ -56,9 +91,10 @@
                     </div>
                 </div>
 
+                <!-- Форма бронирования -->
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0"> 📝 Забронировать</h5>
+                        <h5 class="mb-0"> Забронировать</h5>
                     </div>
                     <div class="card-body">
                         <form id="booking-form">
@@ -83,6 +119,7 @@
             </div>
         </div>
 
+        <!-- Раздел: Расписание -->
         <div class="card mt-4">
             <div class="card-header">
                 <h5 class="mb-0">📆 Расписание бронирований</h5>
@@ -106,17 +143,52 @@
                 </div>
             </div>
         </div>
+
+        <!-- Раздел: Поиск свободных пространств (Твоя логика) -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">🔍 Поиск свободных пространств</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <input type="date" class="form-control" id="free-date" placeholder="Выберите дату">
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-success w-100" onclick="findFreeRooms()">Найти свободные</button>
+                    </div>
+                </div>
+                <div id="free-rooms-list">
+                    <p class="text-muted">Выберите дату для поиска</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const API_URL = '';
 
+        // === TOAST УВЕДОМЛЕНИЯ ===
         function showMessage(text, type = 'success') {
-            const msg = document.getElementById('message');
-            msg.innerHTML = `<div class="alert alert-${type}">${text}</div>`;
-            setTimeout(() => { msg.innerHTML = ''; }, 5000);
+            const container = document.getElementById('toast-container');
+
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.textContent = text;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
 
+        // === ЗАГРУЗКА КОМНАТ ===
         async function loadRooms() {
             try {
                 const response = await fetch(`${API_URL}/rooms`);
@@ -135,7 +207,7 @@
                                 <div>
                                     <h6 class="mb-1">${room.name}</h6>
                                     <span class="badge bg-secondary badge-capacity">👥 ${room.capacity} чел.</span>
-                                    ${room.equipment ? `<span class="badge bg-info badge-capacity">⚙️ ${room.equipment}</span>` : ''}
+                                    ${room.equipment ? `<span class="badge bg-info badge-capacity">️ ${room.equipment}</span>` : ''}
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteRoom(${room.id})">Удалить</button>
                             </div>
@@ -152,6 +224,7 @@
             }
         }
 
+        // === СОЗДАНИЕ КОМНАТЫ ===
         document.getElementById('room-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = {
@@ -173,13 +246,14 @@
                     e.target.reset();
                     loadRooms();
                 } else {
-                    showMessage(`❌ Ошибка ${response.status}: ${result.detail}`, 'danger');
+                    showMessage(` Ошибка ${response.status}: ${result.detail}`, 'danger');
                 }
             } catch (error) {
                 showMessage('❌ Ошибка: ' + error.message, 'danger');
             }
         });
 
+        // === УДАЛЕНИЕ КОМНАТЫ ===
         async function deleteRoom(id) {
             if (!confirm('Удалить это пространство?')) return;
             try {
@@ -197,6 +271,7 @@
             }
         }
 
+        // === СОЗДАНИЕ БРОНИРОВАНИЯ ===
         document.getElementById('booking-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = {
@@ -215,14 +290,14 @@
                 const result = await response.json();
 
                 if (response.status === 201) {
-                    showMessage(`✅ Бронирование создано! `);
+                    showMessage(`✅ Бронирование создано! (Статус: 201 Created)`);
                     e.target.reset();
                 } else if (response.status === 409) {
-                    showMessage(`⚠️ Конфликт! ${result.detail} `, 'warning');
+                    showMessage(`⚠️ Конфликт! ${result.detail} (Статус: 409 Conflict)`, 'warning');
                 } else if (response.status === 404) {
-                    showMessage(`❌ Комната не найдена `, 'danger');
+                    showMessage(`❌ Комната не найдена (Статус: 404 Not Found)`, 'danger');
                 } else if (response.status === 400) {
-                    showMessage(` Некорректные данные `, 'danger');
+                    showMessage(`❌ Некорректные данные (Статус: 400 Bad Request)`, 'danger');
                 } else {
                     showMessage(`❌ Ошибка ${response.status}: ${result.detail}`, 'danger');
                 }
@@ -231,12 +306,13 @@
             }
         });
 
+        // === ЗАГРУЗКА РАСПИСАНИЯ ===
         async function loadSchedule() {
             const roomId = document.getElementById('schedule-room').value;
             const date = document.getElementById('schedule-date').value;
 
             if (!roomId || !date) {
-                showMessage('️ Выберите комнату и дату', 'warning');
+                showMessage('⚠️ Выберите комнату и дату', 'warning');
                 return;
             }
 
@@ -267,6 +343,7 @@
             }
         }
 
+        // === ОТМЕНА БРОНИРОВАНИЯ ===
         async function cancelBooking(id) {
             if (!confirm('Отменить это бронирование?')) return;
             try {
@@ -274,24 +351,95 @@
                 const result = await response.json();
 
                 if (response.status === 200) {
-                    showMessage(`✅ Бронирование отменено `);
+                    showMessage(`✅ Бронирование отменено (Статус: 200 OK)`);
                     loadSchedule();
                 } else if (response.status === 404) {
-                    showMessage(`❌ Бронирование не найдено `, 'danger');
+                    showMessage(`❌ Бронирование не найдено (Статус: 404 Not Found)`, 'danger');
                 } else if (response.status === 400) {
-                    showMessage(`⚠️ ${result.detail} `, 'warning');
+                    showMessage(`⚠️ ${result.detail} (Статус: 400 Bad Request)`, 'warning');
                 }
             } catch (error) {
                 showMessage('Ошибка: ' + error.message, 'danger');
             }
         }
 
+        // === ПОИСК СВОБОДНЫХ ПРОСТРАНСТВ (Твоя логика) ===
+        async function findFreeRooms() {
+            const dateInput = document.getElementById('free-date').value;
+            if (!dateInput) {
+                showMessage('⚠️ Выберите дату', 'warning');
+                return;
+            }
+
+            try {
+                const roomsResponse = await fetch(`${API_URL}/rooms`);
+                const allRooms = await roomsResponse.json();
+
+                const freeRooms = [];
+                const busyRooms = [];
+
+                for (const room of allRooms) {
+                    const bookingsResponse = await fetch(`${API_URL}/rooms/${room.id}/bookings?date=${dateInput}`);
+                    const bookings = await bookingsResponse.json();
+
+                    const activeBookings = bookings.filter(b => b.status === 'active');
+
+                    if (activeBookings.length === 0) {
+                        freeRooms.push(room);
+                    } else {
+                        busyRooms.push({ ...room, bookings: activeBookings });
+                    }
+                }
+
+                const container = document.getElementById('free-rooms-list');
+                let html = '';
+
+                if (freeRooms.length > 0) {
+                    html += '<h6 class="text-success mb-2">✅ Свободные пространства:</h6>';
+                    html += freeRooms.map(room => `
+                        <div class="border rounded p-3 mb-2 bg-white border-success">
+                            <strong>${room.name}</strong>
+                            <span class="badge bg-success">Свободно весь день</span>
+                            <br><small class="text-muted">Вместимость: ${room.capacity} чел.</small>
+                        </div>
+                    `).join('');
+                }
+
+                if (busyRooms.length > 0) {
+                    html += '<h6 class="text-danger mt-3 mb-2">🔴 Занятые пространства:</h6>';
+                    html += busyRooms.map(room => `
+                        <div class="border rounded p-3 mb-2 bg-white border-danger">
+                            <strong>${room.name}</strong>
+                            <span class="badge bg-danger">Есть бронь</span>
+                            <br><small class="text-muted">Вместимость: ${room.capacity} чел.</small>
+                            <ul class="mt-2 mb-0 ps-3">
+                                ${room.bookings.map(b => `
+                                    <li>${formatDateTime(b.start_time)} — ${formatDateTime(b.end_time)} (${b.user_name})</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `).join('');
+                }
+
+                if (freeRooms.length === 0 && busyRooms.length === 0) {
+                    html = '<p class="text-muted">Нет доступных пространств</p>';
+                }
+
+                container.innerHTML = html;
+            } catch (error) {
+                showMessage('Ошибка поиска: ' + error.message, 'danger');
+            }
+        }
+
+        // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
         function formatDateTime(dt) {
             const d = new Date(dt);
             return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         }
 
+        // Инициализация
         document.getElementById('schedule-date').valueAsDate = new Date();
+        document.getElementById('free-date').valueAsDate = new Date();
         loadRooms();
     </script>
 </body>
