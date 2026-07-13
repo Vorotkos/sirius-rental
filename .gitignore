@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 data/
 *.db
+api_requests.log
 *.log
 build/
 dist/
