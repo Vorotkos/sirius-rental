@@ -3,278 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сириус.Аренда — Бронирование пространств</title>
+    <title>Сириус.Аренда - Сервис бронирования пространств</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; }
-        .card { margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .badge-capacity { font-size: 0.9em; }
-        .booking-item { border-left: 3px solid #0d6efd; padding-left: 10px; margin-bottom: 8px; }
-        .booking-cancelled { border-left-color: #6c757d; opacity: 0.6; }
-
-        /* Стили для toast-уведомлений */
-        #toast-container {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
         }
-        .toast-notification {
-            min-width: 300px;
-            max-width: 450px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 0.95em;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s ease;
-            word-wrap: break-word;
+        .container {
+            max-width: 1200px;
         }
-        .toast-notification.show {
-            opacity: 1;
-            transform: translateY(0);
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
         }
-        .toast-success { background-color: #198754; }
-        .toast-danger  { background-color: #dc3545; }
-        .toast-warning { background-color: #ffc107; color: #212529; }
+        .card-header {
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: bold;
+        }
+        .header-title {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .room-card {
+            transition: transform 0.2s;
+        }
+        .room-card:hover {
+            transform: translateY(-5px);
+        }
+        .badge-capacity {
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
-    <!-- Контейнер для уведомлений -->
-    <div id="toast-container"></div>
-
-    <div class="container mt-4">
-        <h1 class="text-center mb-4">🏢 Сириус.Аренда 🏢</h1>
-        <p class="text-center text-muted">Сервис бронирования пространств</p>
+    <div class="container">
+        <div class="header-title">
+            <h1>🏢 Сириус.Аренда 🏢</h1>
+            <p class="lead">Сервис бронирования пространств</p>
+        </div>
 
         <div class="row">
-            <!-- Левая колонка: Список комнат -->
-            <div class="col-md-7">
+            <!-- Доступные пространства -->
+            <div class="col-md-6">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">📋 Доступные пространства</h5>
-                        <button class="btn btn-sm btn-primary" onclick="loadRooms()">🔄 Обновить</button>
+                        <button class="btn btn-sm btn-light" onclick="loadRooms()"> Обновить</button>
                     </div>
                     <div class="card-body">
                         <div id="rooms-list">
-                            <p class="text-muted">Загрузка...</p>
+                            <p class="text-muted text-center">Загрузка...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Поиск свободных пространств -->
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"> Поиск свободных пространств</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="search-date" class="form-label">Дата:</label>
+                                <input type="date" id="search-date" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="search-capacity" class="form-label">Мин. вместимость:</label>
+                                <input type="number" id="search-capacity" class="form-control" placeholder="Необязательно" min="1">
+                            </div>
+                        </div>
+                        <button class="btn btn-info w-100 mb-3" onclick="searchAvailableRooms()">
+                            Найти свободные
+                        </button>
+
+                        <div id="available-rooms-result" style="display: none;">
+                            <h6>Свободные комнаты:</h6>
+                            <div id="available-rooms-list"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Правая колонка: Формы -->
-            <div class="col-md-5">
-                <!-- Форма создания комнаты -->
+            <!-- Добавление пространства -->
+            <div class="col-md-6">
                 <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"> Добавить пространство</h5>
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">➕ Добавить пространство</h5>
                     </div>
                     <div class="card-body">
-                        <form id="room-form">
-                            <div class="mb-2">
-                                <input type="text" class="form-control" id="room-name" placeholder="Название" required>
+                        <form id="add-room-form" onsubmit="addRoom(event)">
+                            <div class="mb-3">
+                                <label for="room-name" class="form-label">Название</label>
+                                <input type="text" class="form-control" id="room-name" required placeholder="Например: Переговорная А">
                             </div>
-                            <div class="mb-2">
-                                <input type="number" class="form-control" id="room-capacity" placeholder="Вместимость" min="1" required>
+                            <div class="mb-3">
+                                <label for="room-capacity" class="form-label">Вместимость (чел.)</label>
+                                <input type="number" class="form-control" id="room-capacity" required min="1" placeholder="10">
                             </div>
-                            <div class="mb-2">
-                                <input type="text" class="form-control" id="room-equipment" placeholder="Оборудование (через запятую)">
+                            <div class="mb-3">
+                                <label for="room-equipment" class="form-label">Оборудование</label>
+                                <input type="text" class="form-control" id="room-equipment" placeholder="Проектор, доска, маркеры">
                             </div>
                             <button type="submit" class="btn btn-success w-100">Создать</button>
                         </form>
                     </div>
                 </div>
 
-                <!-- Форма бронирования -->
+                <!-- Бронирование -->
                 <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"> Забронировать</h5>
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">📅 Забронировать</h5>
                     </div>
                     <div class="card-body">
-                        <form id="booking-form">
-                            <div class="mb-2">
+                        <form id="booking-form" onsubmit="createBooking(event)">
+                            <div class="mb-3">
+                                <label for="booking-room" class="form-label">Выберите комнату</label>
                                 <select class="form-select" id="booking-room" required>
-                                    <option value="">Выберите комнату</option>
+                                    <option value="">Загрузка...</option>
                                 </select>
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-3">
+                                <label for="booking-start" class="form-label">Начало</label>
                                 <input type="datetime-local" class="form-control" id="booking-start" required>
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-3">
+                                <label for="booking-end" class="form-label">Окончание</label>
                                 <input type="datetime-local" class="form-control" id="booking-end" required>
                             </div>
-                            <div class="mb-2">
-                                <input type="text" class="form-control" id="booking-user" placeholder="Ваше имя" required>
+                            <div class="mb-3">
+                                <label for="booking-user" class="form-label">Ваше имя</label>
+                                <input type="text" class="form-control" id="booking-user" required placeholder="Иван Иванов">
                             </div>
-                            <button type="submit" class="btn btn-primary w-100">Забронировать</button>
+                            <button type="submit" class="btn btn-warning w-100">Забронировать</button>
                         </form>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Раздел: Расписание -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">📆 Расписание бронирований</h5>
-            </div>
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <select class="form-select" id="schedule-room">
-                            <option value="">Выберите комнату</option>
-                        </select>
+                <!-- Активные бронирования -->
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">️ Активные бронирования</h5>
                     </div>
-                    <div class="col-md-4">
-                        <input type="date" class="form-control" id="schedule-date">
+                    <div class="card-body">
+                        <div id="bookings-list">
+                            <p class="text-muted text-center">Загрузка...</p>
+                        </div>
                     </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-info w-100" onclick="loadSchedule()">Показать</button>
-                    </div>
-                </div>
-                <div id="schedule-list">
-                    <p class="text-muted">Выберите комнату и дату, чтобы увидеть расписание</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Раздел: Поиск свободных пространств (Твоя логика) -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">🔍 Поиск свободных пространств</h5>
-            </div>
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-8">
-                        <input type="date" class="form-control" id="free-date" placeholder="Выберите дату">
-                    </div>
-                    <div class="col-md-4">
-                        <button class="btn btn-success w-100" onclick="findFreeRooms()">Найти свободные</button>
-                    </div>
-                </div>
-                <div id="free-rooms-list">
-                    <p class="text-muted">Выберите дату для поиска</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const API_URL = '';
+        const API_URL = 'http://127.0.0.1:8000';
 
-        // === TOAST УВЕДОМЛЕНИЯ ===
-        function showMessage(text, type = 'success') {
-            const container = document.getElementById('toast-container');
+        //загрузка комнат при старте
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRooms();
+            loadBookings();
 
-            const toast = document.createElement('div');
-            toast.className = `toast-notification toast-${type}`;
-            toast.textContent = text;
+            // Устанавливаем сегодняшнюю дату для поиска
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('search-date').value = today;
+        });
 
-            container.appendChild(toast);
-
-            requestAnimationFrame(() => {
-                toast.classList.add('show');
-            });
-
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
-        }
-
-        // === ЗАГРУЗКА КОМНАТ ===
+        //загрузка списка комнат
         async function loadRooms() {
             try {
                 const response = await fetch(`${API_URL}/rooms`);
                 const rooms = await response.json();
 
-                const list = document.getElementById('rooms-list');
+                const roomsList = document.getElementById('rooms-list');
                 const bookingSelect = document.getElementById('booking-room');
-                const scheduleSelect = document.getElementById('schedule-room');
 
                 if (rooms.length === 0) {
-                    list.innerHTML = '<p class="text-muted">Нет доступных пространств. Создайте первое!</p>';
-                } else {
-                    list.innerHTML = rooms.map(room => `
-                        <div class="border rounded p-3 mb-2 bg-white">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1">${room.name}</h6>
-                                    <span class="badge bg-secondary badge-capacity">👥 ${room.capacity} чел.</span>
-                                    ${room.equipment ? `<span class="badge bg-info badge-capacity">️ ${room.equipment}</span>` : ''}
-                                </div>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteRoom(${room.id})">Удалить</button>
-                            </div>
-                        </div>
-                    `).join('');
+                    roomsList.innerHTML = '<p class="text-muted text-center">Нет доступных пространств. Создайте первое!</p>';
+                    bookingSelect.innerHTML = '<option value="">Нет доступных комнат</option>';
+                    return;
                 }
 
-                const options = '<option value="">Выберите комнату</option>' +
-                    rooms.map(room => `<option value="${room.id}">${room.name} (до ${room.capacity} чел.)</option>`).join('');
-                bookingSelect.innerHTML = options;
-                scheduleSelect.innerHTML = options;
+                //отображение комнат
+                roomsList.innerHTML = rooms.map(room => `
+                    <div class="card mb-2 room-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title mb-1">${room.name}</h6>
+                                    <span class="badge bg-primary badge-capacity">👥 ${room.capacity} чел.</span>
+                                    ${room.equipment ? `<p class="card-text small text-muted mb-0 mt-1">🔧 ${room.equipment}</p>` : ''}
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteRoom(${room.id})">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                //обновление select для бронирования
+                bookingSelect.innerHTML = rooms.map(room =>
+                    `<option value="${room.id}">${room.name} (вместимость: ${room.capacity})</option>`
+                ).join('');
+
             } catch (error) {
-                showMessage('Ошибка загрузки комнат: ' + error.message, 'danger');
+                console.error('Ошибка при загрузке комнат:', error);
+                document.getElementById('rooms-list').innerHTML =
+                    '<p class="text-danger text-center">Ошибка загрузки</p>';
             }
         }
 
-        // === СОЗДАНИЕ КОМНАТЫ ===
-        document.getElementById('room-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
+        //добавление комнаты
+        async function addRoom(event) {
+            event.preventDefault();
+
+            const roomData = {
                 name: document.getElementById('room-name').value,
                 capacity: parseInt(document.getElementById('room-capacity').value),
-                equipment: document.getElementById('room-equipment').value
+                equipment: document.getElementById('room-equipment').value || null
             };
 
             try {
                 const response = await fetch(`${API_URL}/rooms`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(roomData)
                 });
-                const result = await response.json();
 
                 if (response.ok) {
-                    showMessage(`✅ Пространство создано! (Статус: ${response.status} Created)`);
-                    e.target.reset();
+                    document.getElementById('add-room-form').reset();
                     loadRooms();
+                    alert('Пространство успешно создано!');
                 } else {
-                    showMessage(` Ошибка ${response.status}: ${result.detail}`, 'danger');
+                    const error = await response.json();
+                    alert(`Ошибка: ${error.detail}`);
                 }
             } catch (error) {
-                showMessage('❌ Ошибка: ' + error.message, 'danger');
-            }
-        });
-
-        // === УДАЛЕНИЕ КОМНАТЫ ===
-        async function deleteRoom(id) {
-            if (!confirm('Удалить это пространство?')) return;
-            try {
-                const response = await fetch(`${API_URL}/rooms/${id}`, { method: 'DELETE' });
-                const result = await response.json();
-
-                if (response.ok) {
-                    showMessage(`🗑️ Пространство удалено (Статус: ${response.status} OK)`);
-                    loadRooms();
-                } else {
-                    showMessage(`❌ Ошибка ${response.status}: ${result.detail}`, 'danger');
-                }
-            } catch (error) {
-                showMessage('Ошибка: ' + error.message, 'danger');
+                console.error('Ошибка:', error);
+                alert('Ошибка при создании пространства');
             }
         }
 
-        // === СОЗДАНИЕ БРОНИРОВАНИЯ ===
-        document.getElementById('booking-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
+        //удаление комнаты
+        async function deleteRoom(roomId) {
+            if (!confirm('Вы уверены, что хотите удалить это пространство?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/rooms/${roomId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadRooms();
+                    loadBookings();
+                } else {
+                    const error = await response.json();
+                    alert(`Ошибка: ${error.detail}`);
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка при удалении');
+            }
+        }
+
+        //создание бронирования
+        async function createBooking(event) {
+            event.preventDefault();
+
+            const bookingData = {
                 room_id: parseInt(document.getElementById('booking-room').value),
                 start_time: document.getElementById('booking-start').value,
                 end_time: document.getElementById('booking-end').value,
@@ -285,162 +286,156 @@
                 const response = await fetch(`${API_URL}/bookings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(bookingData)
                 });
-                const result = await response.json();
 
-                if (response.status === 201) {
-                    showMessage(`✅ Бронирование создано! (Статус: 201 Created)`);
-                    e.target.reset();
-                } else if (response.status === 409) {
-                    showMessage(`⚠️ Конфликт! ${result.detail} (Статус: 409 Conflict)`, 'warning');
-                } else if (response.status === 404) {
-                    showMessage(`❌ Комната не найдена (Статус: 404 Not Found)`, 'danger');
-                } else if (response.status === 400) {
-                    showMessage(`❌ Некорректные данные (Статус: 400 Bad Request)`, 'danger');
+                if (response.ok) {
+                    document.getElementById('booking-form').reset();
+                    loadBookings();
+                    alert('Бронирование успешно создано!');
                 } else {
-                    showMessage(`❌ Ошибка ${response.status}: ${result.detail}`, 'danger');
+                    const error = await response.json();
+                    alert(`Ошибка: ${error.detail}`);
                 }
             } catch (error) {
-                showMessage('❌ Ошибка: ' + error.message, 'danger');
+                console.error('Ошибка:', error);
+                alert('Ошибка при создании бронирования');
             }
-        });
+        }
 
-        // === ЗАГРУЗКА РАСПИСАНИЯ ===
-        async function loadSchedule() {
-            const roomId = document.getElementById('schedule-room').value;
-            const date = document.getElementById('schedule-date').value;
-
-            if (!roomId || !date) {
-                showMessage('⚠️ Выберите комнату и дату', 'warning');
-                return;
-            }
-
+        //загрузка бронирований
+        async function loadBookings() {
             try {
-                const response = await fetch(`${API_URL}/rooms/${roomId}/bookings?date=${date}`);
+                const response = await fetch(`${API_URL}/bookings`);
                 const bookings = await response.json();
 
-                const list = document.getElementById('schedule-list');
+                const bookingsList = document.getElementById('bookings-list');
+
                 if (bookings.length === 0) {
-                    list.innerHTML = '<p class="text-muted">На эту дату нет бронирований</p>';
+                    bookingsList.innerHTML = '<p class="text-muted text-center">Нет активных бронирований</p>';
                     return;
                 }
 
-                list.innerHTML = bookings.map(b => `
-                    <div class="booking-item ${b.status === 'cancelled' ? 'booking-cancelled' : ''}">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${b.user_name}</strong><br>
-                                <small class="text-muted">🕐 ${formatDateTime(b.start_time)} — ${formatDateTime(b.end_time)}</small><br>
-                                <span class="badge ${b.status === 'active' ? 'bg-success' : 'bg-secondary'}">${b.status === 'active' ? 'Активно' : 'Отменено'}</span>
+                //загрузка информации о комнатах
+                const roomsResponse = await fetch(`${API_URL}/rooms`);
+                const rooms = await roomsResponse.json();
+                const roomMap = {};
+                rooms.forEach(room => {
+                    roomMap[room.id] = room.name;
+                });
+
+                bookingsList.innerHTML = bookings.map(booking => `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title mb-1">${roomMap[booking.room_id] || 'Комната #' + booking.room_id}</h6>
+                                    <p class="card-text small mb-1">
+                                        📅 ${new Date(booking.start_time).toLocaleString('ru-RU')} - ${new Date(booking.end_time).toLocaleString('ru-RU')}
+                                    </p>
+                                    <p class="card-text small text-muted mb-0">👤 ${booking.user_name}</p>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" onclick="cancelBooking(${booking.id})">❌ Отменить</button>
                             </div>
-                            ${b.status === 'active' ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelBooking(${b.id})">Отменить</button>` : ''}
                         </div>
                     </div>
                 `).join('');
+
             } catch (error) {
-                showMessage('Ошибка: ' + error.message, 'danger');
+                console.error('Ошибка при загрузке бронирований:', error);
+                document.getElementById('bookings-list').innerHTML =
+                    '<p class="text-danger text-center">Ошибка загрузки</p>';
             }
         }
 
-        // === ОТМЕНА БРОНИРОВАНИЯ ===
-        async function cancelBooking(id) {
-            if (!confirm('Отменить это бронирование?')) return;
-            try {
-                const response = await fetch(`${API_URL}/bookings/${id}`, { method: 'DELETE' });
-                const result = await response.json();
+        //отмена бронирования
+        async function cancelBooking(bookingId) {
+            if (!confirm('Отменить бронирование?')) return;
 
-                if (response.status === 200) {
-                    showMessage(`✅ Бронирование отменено (Статус: 200 OK)`);
-                    loadSchedule();
-                } else if (response.status === 404) {
-                    showMessage(`❌ Бронирование не найдено (Статус: 404 Not Found)`, 'danger');
-                } else if (response.status === 400) {
-                    showMessage(`⚠️ ${result.detail} (Статус: 400 Bad Request)`, 'warning');
+            try {
+                const response = await fetch(`${API_URL}/bookings/${bookingId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadBookings();
+                } else {
+                    const error = await response.json();
+                    alert(`Ошибка: ${error.detail}`);
                 }
             } catch (error) {
-                showMessage('Ошибка: ' + error.message, 'danger');
+                console.error('Ошибка:', error);
+                alert('Ошибка при отмене бронирования');
             }
         }
 
-        // === ПОИСК СВОБОДНЫХ ПРОСТРАНСТВ (Твоя логика) ===
-        async function findFreeRooms() {
-            const dateInput = document.getElementById('free-date').value;
+        //поиск свободных комнат
+        async function searchAvailableRooms() {
+            const dateInput = document.getElementById('search-date').value;
+            const capacity = document.getElementById('search-capacity').value;
+
             if (!dateInput) {
-                showMessage('⚠️ Выберите дату', 'warning');
+                alert('Пожалуйста, выберите дату');
                 return;
             }
 
+            const startDateTime = `${dateInput}T00:00:00`;
+            const endDateTime = `${dateInput}T23:59:59`;
+
             try {
-                const roomsResponse = await fetch(`${API_URL}/rooms`);
-                const allRooms = await roomsResponse.json();
+                let url = `${API_URL}/rooms/available?start=${encodeURIComponent(startDateTime)}&end=${encodeURIComponent(endDateTime)}`;
 
-                const freeRooms = [];
-                const busyRooms = [];
+                if (capacity) {
+                    url += `&capacity=${encodeURIComponent(capacity)}`;
+                }
 
-                for (const room of allRooms) {
-                    const bookingsResponse = await fetch(`${API_URL}/rooms/${room.id}/bookings?date=${dateInput}`);
-                    const bookings = await bookingsResponse.json();
+                const response = await fetch(url);
 
-                    const activeBookings = bookings.filter(b => b.status === 'active');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Server error:', errorData);
 
-                    if (activeBookings.length === 0) {
-                        freeRooms.push(room);
-                    } else {
-                        busyRooms.push({ ...room, bookings: activeBookings });
+
+                    let errorMessage = 'Ошибка при поиске';
+                    if (errorData.detail) {
+                        if (Array.isArray(errorData.detail)) {
+                            errorMessage = errorData.detail.map(e => e.msg || String(e)).join(', ');
+                        } else {
+                            errorMessage = String(errorData.detail);
+                        }
                     }
+
+                    throw new Error(errorMessage);
                 }
 
-                const container = document.getElementById('free-rooms-list');
-                let html = '';
+                const rooms = await response.json();
 
-                if (freeRooms.length > 0) {
-                    html += '<h6 class="text-success mb-2">✅ Свободные пространства:</h6>';
-                    html += freeRooms.map(room => `
-                        <div class="border rounded p-3 mb-2 bg-white border-success">
-                            <strong>${room.name}</strong>
-                            <span class="badge bg-success">Свободно весь день</span>
-                            <br><small class="text-muted">Вместимость: ${room.capacity} чел.</small>
+                const resultDiv = document.getElementById('available-rooms-result');
+                const listDiv = document.getElementById('available-rooms-list');
+
+                if (rooms.length === 0) {
+                    listDiv.innerHTML = '<div class="alert alert-warning">Нет свободных комнат на выбранную дату</div>';
+                } else {
+                    listDiv.innerHTML = rooms.map(room => `
+                        <div class="card mb-2 border-success">
+                            <div class="card-body">
+                                <h6 class="card-title text-success">✅ ${room.name}</h6>
+                                <p class="card-text mb-1">
+                                    <strong>Вместимость:</strong> ${room.capacity} чел.
+                                </p>
+                                ${room.equipment ? `<p class="card-text mb-0"><small class="text-muted">🔧 ${room.equipment}</small></p>` : ''}
+                            </div>
                         </div>
                     `).join('');
                 }
 
-                if (busyRooms.length > 0) {
-                    html += '<h6 class="text-danger mt-3 mb-2">🔴 Занятые пространства:</h6>';
-                    html += busyRooms.map(room => `
-                        <div class="border rounded p-3 mb-2 bg-white border-danger">
-                            <strong>${room.name}</strong>
-                            <span class="badge bg-danger">Есть бронь</span>
-                            <br><small class="text-muted">Вместимость: ${room.capacity} чел.</small>
-                            <ul class="mt-2 mb-0 ps-3">
-                                ${room.bookings.map(b => `
-                                    <li>${formatDateTime(b.start_time)} — ${formatDateTime(b.end_time)} (${b.user_name})</li>
-                                `).join('')}
-                            </ul>
-                        </div>
-                    `).join('');
-                }
+                resultDiv.style.display = 'block';
 
-                if (freeRooms.length === 0 && busyRooms.length === 0) {
-                    html = '<p class="text-muted">Нет доступных пространств</p>';
-                }
-
-                container.innerHTML = html;
             } catch (error) {
-                showMessage('Ошибка поиска: ' + error.message, 'danger');
+                console.error('Ошибка:', error);
+                alert(`Ошибка при поиске: ${error.message || 'Неизвестная ошибка'}`);
             }
         }
-
-        // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
-        function formatDateTime(dt) {
-            const d = new Date(dt);
-            return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-        }
-
-        // Инициализация
-        document.getElementById('schedule-date').valueAsDate = new Date();
-        document.getElementById('free-date').valueAsDate = new Date();
-        loadRooms();
     </script>
 </body>
 </html>

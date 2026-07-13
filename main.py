@@ -195,6 +195,42 @@ def get_rooms(
         query = query.filter(Room.equipment.contains(equipment))
     return query.all()
 
+#ПОИСК СВОБОДНЫХ ПРОСТРАНСТВ
+@app.get("/rooms/available", response_model=List[RoomResponse])
+def get_available_rooms(
+        start: str = Query(..., description="Время начала в формате YYYY-MM-DDTHH:MM:SS"),
+        end: str = Query(..., description="Время окончания в формате YYYY-MM-DDTHH:MM:SS"),
+        capacity: Optional[int] = Query(None, description="Минимальная вместимость"),
+        db: Session = Depends(get_db)
+):
+    """Поиск свободных пространств на заданный интервал времени"""
+    try:
+        start_dt = datetime.fromisoformat(start)
+        end_dt = datetime.fromisoformat(end)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Неверный формат даты. Используйте YYYY-MM-DDTHH:MM:SS"
+        )
+
+    if end_dt <= start_dt:
+        raise HTTPException(
+            status_code=400,
+            detail="Время окончания должно быть позже времени начала"
+        )
+
+    busy_room_ids = db.query(Booking.room_id).filter(
+        Booking.status == "active",
+        Booking.start_time < end_dt,
+        Booking.end_time > start_dt
+    ).subquery()
+
+    query = db.query(Room).filter(~Room.id.in_(busy_room_ids))
+
+    if capacity is not None:
+        query = query.filter(Room.capacity >= capacity)
+
+    return query.all()
 
 @app.get("/rooms/{room_id}", response_model=RoomResponse)
 def get_room(room_id: int, db: Session = Depends(get_db)):
@@ -276,6 +312,8 @@ def cancel_booking(booking_id: int, db: Session = Depends(get_db)):
     return {"message": "Бронирование отменено"}
 
 
+
+
 #РАСПИСАНИЕ КОМНАТ
 @app.get("/rooms/{room_id}/bookings", response_model=List[BookingResponse])
 def get_room_schedule(
@@ -300,42 +338,6 @@ def get_room_schedule(
 
     return bookings
 
-#ПОИСК СВОБОДНЫХ ПРОСТРАНСТВ
-@app.get("/rooms/available", response_model=List[RoomResponse])
-def get_available_rooms(
-        start: str = Query(..., description="Время начала в формате YYYY-MM-DDTHH:MM:SS"),
-        end: str = Query(..., description="Время окончания в формате YYYY-MM-DDTHH:MM:SS"),
-        capacity: Optional[int] = Query(None, description="Минимальная вместимость"),
-        db: Session = Depends(get_db)
-):
-    """Поиск свободных пространств на заданный интервал времени"""
-    try:
-        start_dt = datetime.fromisoformat(start)
-        end_dt = datetime.fromisoformat(end)
-    except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail="Неверный формат даты. Используйте YYYY-MM-DDTHH:MM:SS"
-        )
-
-    if end_dt <= start_dt:
-        raise HTTPException(
-            status_code=400,
-            detail="Время окончания должно быть позже времени начала"
-        )
-
-    busy_room_ids = db.query(Booking.room_id).filter(
-        Booking.status == "active",
-        Booking.start_time < end_dt,
-        Booking.end_time > start_dt
-    ).subquery()
-
-    query = db.query(Room).filter(~Room.id.in_(busy_room_ids))
-
-    if capacity is not None:
-        query = query.filter(Room.capacity >= capacity)
-
-    return query.all()
 
 
 #автозапуск
