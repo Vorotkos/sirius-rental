@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import logging
 import webbrowser
@@ -15,8 +16,30 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
-os.makedirs("data", exist_ok=True)
-SQLALCHEMY_DATABASE_URL = "sqlite:///./data/rooms.db"
+
+#ПУТИ (работают и в EXE, и в обычном Python)
+def get_resource_path(relative_path):
+    """Путь к ресурсам (static/index.html и т.д.)"""
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
+
+
+def get_user_path(relative_path):
+    """Путь к пользовательским данным (БД, логи) — рядом с EXE"""
+    if getattr(sys, 'frozen', False):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
+
+
+#НАСТРОЙКА БАЗЫ ДАННЫХ
+data_dir = get_user_path("data")
+os.makedirs(data_dir, exist_ok=True)
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{get_user_path(os.path.join('data', 'rooms.db'))}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -51,7 +74,7 @@ class Booking(Base):
     start_time = Column(DateTime)
     end_time = Column(DateTime)
     user_name = Column(String)
-    status = Column(String, default="active")  # active / cancelled
+    status = Column(String, default="active")
 
 
 Base.metadata.create_all(bind=engine)
@@ -69,7 +92,6 @@ class RoomResponse(BaseModel):
     name: str
     capacity: int
     equipment: Optional[str] = None
-
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -87,7 +109,6 @@ class BookingResponse(BaseModel):
     end_time: datetime
     user_name: str
     status: str
-
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -101,9 +122,10 @@ app = FastAPI(
 logger = logging.getLogger("api_logger")
 logger.setLevel(logging.INFO)
 
+log_file = get_user_path("api_requests.log")
 file_handler = RotatingFileHandler(
-    "api_requests.log",
-    maxBytes=5*1024*1024,  # 5 МБ
+    log_file,
+    maxBytes=5*1024*1024,
     backupCount=3,
     encoding="utf-8"
 )
@@ -136,9 +158,18 @@ os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+#ФАЙЛЫ И ГЛАВНАЯ СТРАНИЦА
+STATIC_PATH = get_resource_path("static")
+
+if os.path.exists(STATIC_PATH):
+    app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
+
 @app.get("/")
 def read_root():
-    return FileResponse("static/index.html")
+    index_path = get_resource_path(os.path.join("static", "index.html"))
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Веб-интерфейс недоступен. Используйте /docs для API"}
 
 
 # ЭНДПОИНТЫ: КОМНАТЫ

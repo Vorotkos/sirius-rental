@@ -1,10 +1,12 @@
 venv/
+venv312/
 __pycache__/
 *.pyc
 data/
-rooms.db
-api_requests.log
+*.db
+*.log
 build/
 dist/
 .idea/
-data/test_rooms.db
+.vscode/
+.pytest_cache/

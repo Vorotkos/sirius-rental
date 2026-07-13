@@ -1,8 +1,11 @@
+# -*- mode: python ; coding: utf-8 -*-
+
+
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('static', 'static'), ('rooms.db', '.')],
+    datas=[('static', 'static')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -11,12 +14,13 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
-
 pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
     name='sirius-rental',
     debug=False,
