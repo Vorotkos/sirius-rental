@@ -48,6 +48,6 @@ python main.py
 После открытия сервиса добавьте в конце адреса `/docs`. Должно получиться http://127.0.0.1:8000/docs
 
 ## Запуск тестов:
-После установки репозитория(https://github.com/Vorotkos/sirius-rental.git) убедитесь, что у вас включено виртуальное окружение `venv312\Scripts\activate` и в терминале введите `py test_main.py -v`.
+После установки репозитория(https://github.com/Vorotkos/sirius-rental.git) убедитесь, что у вас включено виртуальное окружение `venv312\Scripts\activate` и в терминале введите `pytest test_main.py -v`.
 
 ### !!!Без установки зависимостей он работать не будет !!!
