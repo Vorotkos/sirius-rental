@@ -32,21 +32,22 @@ REST API сервис с веб-интерфейсом для бронирова
 Скачать архив по [ссылке](https://github.com/Vorotkos/sirius-rental/releases), разархивировать его и запустить _sirius-rental.exe_.
 
 ### Вариант 2 – через терминал
-Поочерёдно введите в терминал следующие строки:
+Сперва скачайте зависимости:
+1. `python -m venv venv`
+2. `venv\Scripts\activate`
+3. `pip install -r requirements.txt`
+
+Затем поочерёдно введите в терминал следующие строки:
 ```bash
 git clone https://github.com/Vorotkos/sirius-rental.git
 cd sirius-rental
 python main.py
 ```
-####  При запуске появляется ошибка из-за отсутсвия библиотек?
-Если при запуске терминал указывает на отсутствие зависимостей, то выполните эти команды в папке проекта:
-- #### Учтите, что если командная строка жалуется на _python_, то попробуйте использовать _py_.
-1. `python -m venv venv`
-2. `venv\Scripts\activate`
-3. `pip install -r requirements.txt
 
 ## Инструкция по открытию программы с Swagger UI:
 После открытия сервиса добавьте в конце адреса `/docs`. Должно получиться http://127.0.0.1:8000/docs
 
 ## Запуск тестов:
 После установки репозитория(https://github.com/Vorotkos/sirius-rental.git) убедитесь, что у вас включено виртуальное окружение `venv312\Scripts\activate` и в терминале введите `py test_main.py -v`.
+
+### !!!Без установки зависимостей он работать не будет !!!
